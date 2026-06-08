@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerial Flow — Админка</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8f4fa;
+            color: #2d1b36;
+            min-height: 100vh;
+        }
+        .admin-layout { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #2d1b36, #4a2a5a);
+            padding: 24px 0;
+            flex-shrink: 0;
+        }
+        .admin-sidebar .logo {
+            display: block;
+            text-align: center;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px;
+            text-decoration: none;
+        }
+        .admin-sidebar .logo span {
+            font-family: 'Playfair Display', serif;
+            color: white;
+            font-size: 22px;
+        }
+        .admin-sidebar .logo small {
+            display: block;
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        .admin-nav a {
+            display: block;
+            padding: 12px 24px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .admin-nav a:hover, .admin-nav a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .admin-nav a.active { border-left: 3px solid #d4b8e0; }
+        .admin-main { flex: 1; padding: 32px; }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .admin-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+        }
+        .admin-header a {
+            color: #6b5a7a;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #d4b8e0;
+            transition: all 0.2s;
+        }
+        .admin-header a:hover {
+            background: #d4b8e0;
+            color: white;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(107,58,122,0.08);
+        }
+        .stat-card .stat-number {
+            font-size: 36px;
+            font-weight: 600;
+            color: #6b3a7a;
+        }
+        .stat-card .stat-label {
+            color: #6b5a7a;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .admin-welcome {
+            background: linear-gradient(135deg, #f8e8f0, #e8d5f0);
+            border-radius: 20px;
+            padding: 32px;
+        }
+        .admin-welcome h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        .admin-welcome p {
+            color: #6b5a7a;
+            line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar { width: 100%; padding: 12px 0; }
+            .admin-nav { display: flex; overflow-x: auto; padding: 0 12px; }
+            .admin-nav a { white-space: nowrap; padding: 10px 16px; }
+            .admin-main { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="admin-sidebar">
+            <a href="/admin" class="logo">
+                <span>Aerial Flow</span>
+                <small>Панель управления</small>
+            </a>
+            <nav class="admin-nav">
+                <a href="/admin" class="active">Dashboard</a>
+                <a href="/admin/leads">Заявки</a>
+                <a href="/admin/events">События</a>
+                <a href="/admin/news">Новости</a>
+                <a href="/admin/logout">Выйти</a>
+            </nav>
+        </div>
+        <div class="admin-main">
+            <div class="admin-header">
+                <h1>Dashboard</h1>
+                <a href="/">На сайт</a>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ leads_count }}</div>
+                    <div class="stat-label">Всего заявок</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ new_leads }}</div>
+                    <div class="stat-label">Новых заявок</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ events_count }}</div>
+                    <div class="stat-label">Событий</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ news_count }}</div>
+                    <div class="stat-label">Новостей</div>
+                </div>
+            </div>
+            <div class="admin-welcome">
+                <h2>Добро пожаловать в админ-панель</h2>
+                <p>Здесь вы можете управлять заявками, событиями и новостями студии Aerial Flow.<br>
+                Заявки приходят с сайта автоматически. Вы можете менять их статус, добавлять события и новости, а также готовить тексты для публикации в соцсетях.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

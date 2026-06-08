@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerial Flow — {% block title %}Воздушная гимнастика для взрослых{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="floating-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">✦</span>
+                <span class="logo-text">Aerial Flow</span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Меню">
+                <span></span><span></span><span></span>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#formats">Форматы</a></li>
+                <li><a href="/#quiz">Мини-тест</a></li>
+                <li><a href="/#events">События</a></li>
+                <li><a href="/#reviews">Отзывы</a></li>
+                <li><a href="/#faq">FAQ</a></li>
+                <li><a href="/#contact" class="nav-cta">Записаться</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <span class="logo-icon">✦</span>
+                    <span class="logo-text">Aerial Flow</span>
+                    <p>Воздушная гимнастика для взрослых девушек и женщин.<br>Мягкий старт, красивое тело и ощущение полёта.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="/#formats">Форматы занятий</a></li>
+                        <li><a href="/#quiz">Мини-тест</a></li>
+                        <li><a href="/#events">События</a></li>
+                        <li><a href="/#faq">Вопросы и ответы</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Студия</h4>
+                    <ul>
+                        <li><a href="/#reviews">Отзывы</a></li>
+                        <li><a href="/#contact">Контакты</a></li>
+                        <li><a href="/admin" class="admin-link">Admin</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Aerial Flow. Сделано с любовью к воздушной гимнастике.</p>
+            </div>
+        </div>
+    </footer>
+
+    <a href="#contact" class="floating-cta" id="floatingCta">
+        <span class="floating-cta-text">Записаться</span>
+        <span class="floating-cta-icon">→</span>
+    </a>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=2"></script>
+</body>
+</html>

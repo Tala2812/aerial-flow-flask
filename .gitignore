@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask instance folder
+instance/
+
+# Project specific
+aerial_flow.db

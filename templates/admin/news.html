@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новости — Aerial Flow Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f4fa; color: #2d1b36; }
+        .admin-layout { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #2d1b36, #4a2a5a);
+            padding: 24px 0; flex-shrink: 0;
+        }
+        .admin-sidebar .logo {
+            display: block; text-align: center;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px; text-decoration: none;
+        }
+        .admin-sidebar .logo span {
+            font-family: 'Playfair Display', serif;
+            color: white; font-size: 22px;
+        }
+        .admin-sidebar .logo small {
+            display: block; color: rgba(255,255,255,0.6);
+            font-size: 11px; margin-top: 4px;
+        }
+        .admin-nav a {
+            display: block; padding: 12px 24px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none; font-size: 14px; transition: all 0.2s;
+        }
+        .admin-nav a:hover, .admin-nav a.active {
+            background: rgba(255,255,255,0.1); color: white;
+        }
+        .admin-nav a.active { border-left: 3px solid #d4b8e0; }
+        .admin-main { flex: 1; padding: 32px; }
+        .admin-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 32px;
+        }
+        .admin-header h1 { font-family: 'Playfair Display', serif; font-size: 28px; }
+        .admin-header a, .admin-header .btn-add {
+            color: #6b5a7a; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border-radius: 8px; border: 1px solid #d4b8e0;
+            transition: all 0.2s; cursor: pointer; display: inline-block;
+        }
+        .admin-header .btn-add { background: #6b3a7a; color: white; border: none; }
+        .admin-header a:hover, .admin-header .btn-add:hover { opacity: 0.9; }
+        .table-wrap {
+            background: white; border-radius: 16px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(107,58,122,0.08);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 14px 16px; text-align: left; font-size: 14px; }
+        th {
+            background: #f8f4fa; font-weight: 500; color: #6b5a7a;
+            font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        td { border-bottom: 1px solid #f0eaf4; }
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px;
+        }
+        .badge-draft { background: #f3f0f8; color: #6b5a7a; }
+        .badge-ready { background: #dbeafe; color: #1e40af; }
+        .badge-published { background: #d1fae5; color: #065f46; }
+        .btn-del {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            background: #fef2f2; color: #dc2626; font-size: 12px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+        .btn-del:hover { background: #dc2626; color: white; }
+        .btn-edit {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            background: #f0eaf4; color: #6b3a7a; font-size: 12px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            margin-right: 4px; text-decoration: none; display: inline-block;
+        }
+        .btn-edit:hover { background: #d4b8e0; }
+        .btn-generate {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            background: #e8d5f0; color: #6b3a7a; font-size: 12px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+        .btn-generate:hover { background: #d4b8e0; }
+        .social-text-box {
+            background: #f8f4fa; border-radius: 8px;
+            padding: 12px; font-size: 13px; line-height: 1.5;
+            white-space: pre-wrap; max-height: 200px; overflow-y: auto;
+            border: 1px solid #e0d4e8; margin-top: 8px; display: none;
+        }
+        .social-text-box.show { display: block; }
+        @media (max-width: 768px) {
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar { width: 100%; padding: 12px 0; }
+            .admin-nav { display: flex; overflow-x: auto; padding: 0 12px; }
+            .admin-nav a { white-space: nowrap; padding: 10px 16px; }
+            .admin-main { padding: 16px; }
+            .table-wrap { overflow-x: auto; }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="admin-sidebar">
+            <a href="/admin" class="logo">
+                <span>Aerial Flow</span>
+                <small>Панель управления</small>
+            </a>
+            <nav class="admin-nav">
+                <a href="/admin">Dashboard</a>
+                <a href="/admin/leads">Заявки</a>
+                <a href="/admin/events">События</a>
+                <a href="/admin/news" class="active">Новости</a>
+                <a href="/admin/logout">Выйти</a>
+            </nav>
+        </div>
+        <div class="admin-main">
+            <div class="admin-header">
+                <h1>Новости</h1>
+                <div>
+                    <a href="/admin/news/new" class="btn-add">+ Добавить новость</a>
+                    <a href="/" style="margin-left:8px;">На сайт</a>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Опубликовано</th>
+                            <th>Текст для соцсетей</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in news_list %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.title }}</td>
+                            <td>{{ item.date or '—' }}</td>
+                            <td>
+                                <span class="badge badge-{{ item.status }}">
+                                    {% if item.status == 'draft' %}Черновик
+                                    {% elif item.status == 'ready' %}Готово
+                                    {% else %}Опубликовано{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ 'Да' if item.is_published else 'Нет' }}</td>
+                            <td>
+                                <button class="btn-generate" onclick="generatePost({{ item.id }})">
+                                    Сформировать пост
+                                </button>
+                                <div class="social-text-box" id="socialText{{ item.id }}"></div>
+                            </td>
+                            <td>
+                                <a href="/admin/news/{{ item.id }}/edit" class="btn-edit">Изменить</a>
+                                <form method="POST" action="/admin/news/{{ item.id }}/delete" style="display:inline;">
+                                    <button type="submit" class="btn-del" onclick="return confirm('Удалить новость?')">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if news_list|length == 0 %}
+                        <tr>
+                            <td colspan="7" style="text-align:center;padding:40px;color:#6b5a7a;">
+                                Нет новостей. <a href="/admin/news/new">Добавить</a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+    function generatePost(id) {
+        const box = document.getElementById('socialText' + id);
+        fetch('/admin/news/' + id + '/generate-post', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    box.textContent = data.social_text;
+                    box.classList.add('show');
+                }
+            });
+    }
+    </script>
+</body>
+</html>
