@@ -3,7 +3,11 @@ import sqlite3
 from datetime import datetime
 from functools import wraps
 
+from dotenv import load_dotenv
+from openai import OpenAI
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'aerial-flow-secret-key-2024'
@@ -54,6 +58,22 @@ def init_db():
             status TEXT DEFAULT 'draft',
             social_text TEXT,
             is_published BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS generated_texts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text_type TEXT,
+            topic TEXT,
+            class_format TEXT,
+            audience TEXT,
+            tone TEXT,
+            length TEXT,
+            cta TEXT,
+            extra_details TEXT,
+            generated_text TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -163,10 +183,12 @@ def admin_dashboard():
     new_leads = conn.execute("SELECT COUNT(*) FROM leads WHERE status = 'new'").fetchone()[0]
     events_count = conn.execute('SELECT COUNT(*) FROM events').fetchone()[0]
     news_count = conn.execute('SELECT COUNT(*) FROM news').fetchone()[0]
+    texts_count = conn.execute('SELECT COUNT(*) FROM generated_texts').fetchone()[0]
     conn.close()
     return render_template('admin/dashboard.html',
                            leads_count=leads_count, new_leads=new_leads,
-                           events_count=events_count, news_count=news_count)
+                           events_count=events_count, news_count=news_count,
+                           texts_count=texts_count)
 
 
 @app.route('/admin/leads')
@@ -325,6 +347,97 @@ def admin_news_generate_post(news_id):
     conn.close()
 
     return jsonify({'success': True, 'social_text': template})
+
+
+@app.route('/admin/generator')
+@login_required
+def admin_generator():
+    api_key = os.getenv('OPENAI_API_KEY')
+    return render_template('admin/generator.html', has_api_key=bool(api_key))
+
+
+@app.route('/admin/generator/generate', methods=['POST'])
+@login_required
+def admin_generator_generate():
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'error': 'OPENAI_API_KEY не задан. Создайте файл .env с ключом.'}), 400
+
+    text_type = request.form.get('text_type', 'пост для соцсетей')
+    topic = request.form.get('topic', '')
+    class_format = request.form.get('class_format', 'Общая тема студии')
+    audience = request.form.get('audience', 'взрослые девушки и женщины')
+    tone = request.form.get('tone', 'вдохновляющая')
+    length = request.form.get('length', 'средний')
+    cta = request.form.get('cta', 'записаться на пробное занятие')
+    extra = request.form.get('extra_details', '')
+
+    length_map = {'short': '2-3 предложения', 'medium': '1 небольшой абзац', 'long': '2-3 абзаца'}
+    length_ru = length_map.get(length, '1 абзац')
+
+    system_prompt = (
+        "Ты — копирайтер студии воздушной гимнастики Aerial Flow. "
+        "Пиши на русском языке. Стиль: женственно, воздушно, современно, без лишнего пафоса и клише. "
+        "Тон — мягкий, заботливый, с ясной структурой. Без агрессивных продаж. "
+        "Призыв к действию — мягкий, но понятный. Используй эмодзи умеренно."
+    )
+
+    user_prompt = (
+        f"Тип текста: {text_type}\n"
+        f"Тема: {topic}\n"
+        f"Формат занятия: {class_format}\n"
+        f"Целевая аудитория: {audience}\n"
+        f"Тональность: {tone}\n"
+        f"Длина текста: {length_ru}\n"
+        f"Призыв к действию: {cta}\n"
+        f"Дополнительные детали: {extra}\n\n"
+        f"Напиши текст."
+    )
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model='gpt-4o-mini',
+            messages=[
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        generated = response.choices[0].message.content.strip()
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Ошибка API: {str(e)}'}), 500
+
+    conn = get_db()
+    conn.execute(
+        'INSERT INTO generated_texts (text_type, topic, class_format, audience, tone, length, cta, extra_details, generated_text) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (text_type, topic, class_format, audience, tone, length, cta, extra, generated)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'success': True, 'text': generated})
+
+
+@app.route('/admin/generated-texts')
+@login_required
+def admin_generated_texts():
+    conn = get_db()
+    texts = conn.execute('SELECT * FROM generated_texts ORDER BY created_at DESC').fetchall()
+    conn.close()
+    return render_template('admin/generated_texts.html', texts=texts)
+
+
+@app.route('/admin/generated-texts/<int:text_id>/delete', methods=['POST'])
+@login_required
+def admin_generated_text_delete(text_id):
+    conn = get_db()
+    conn.execute('DELETE FROM generated_texts WHERE id = ?', (text_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin_generated_texts'))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История текстов — Aerial Flow Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f4fa; color: #2d1b36; }
+        .admin-layout { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #2d1b36, #4a2a5a);
+            padding: 24px 0; flex-shrink: 0;
+        }
+        .admin-sidebar .logo {
+            display: block; text-align: center;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px; text-decoration: none;
+        }
+        .admin-sidebar .logo span { font-family: 'Playfair Display', serif; color: white; font-size: 22px; }
+        .admin-sidebar .logo small { display: block; color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; }
+        .admin-nav a {
+            display: block; padding: 12px 24px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none; font-size: 14px; transition: all 0.2s;
+        }
+        .admin-nav a:hover, .admin-nav a.active { background: rgba(255,255,255,0.1); color: white; }
+        .admin-nav a.active { border-left: 3px solid #d4b8e0; }
+        .admin-main { flex: 1; padding: 32px; }
+        .admin-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 32px;
+        }
+        .admin-header h1 { font-family: 'Playfair Display', serif; font-size: 28px; }
+        .admin-header a {
+            color: #6b5a7a; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border-radius: 8px; border: 1px solid #d4b8e0;
+            transition: all 0.2s;
+        }
+        .admin-header a:hover { background: #d4b8e0; color: white; }
+        .texts-list { display: flex; flex-direction: column; gap: 16px; }
+        .text-card {
+            background: white; border-radius: 16px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(107,58,122,0.08);
+        }
+        .text-card-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 12px; gap: 16px;
+        }
+        .text-card-meta { font-size: 12px; color: #6b5a7a; }
+        .text-card-meta span { display: inline-block; margin-right: 12px; }
+        .text-card-meta .label { color: #9a85aa; }
+        .text-card-body {
+            font-size: 14px; line-height: 1.7; color: #2d1b36;
+            white-space: pre-wrap; background: #f8f4fa;
+            border-radius: 10px; padding: 16px;
+            border: 1px solid #f0eaf4; margin-bottom: 12px;
+        }
+        .btn-del {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            background: #fef2f2; color: #dc2626; font-size: 12px;
+            cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
+        }
+        .btn-del:hover { background: #dc2626; color: white; }
+        .btn-copy {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            background: #f0eaf4; color: #6b3a7a; font-size: 12px;
+            cursor: pointer; font-family: 'Inter', sans-serif; margin-right: 4px;
+        }
+        .btn-copy:hover { background: #d4b8e0; }
+        @media (max-width: 768px) {
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar { width: 100%; padding: 12px 0; }
+            .admin-nav { display: flex; overflow-x: auto; padding: 0 12px; }
+            .admin-nav a { white-space: nowrap; padding: 10px 16px; }
+            .admin-main { padding: 16px; }
+            .text-card-header { flex-direction: column; }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="admin-sidebar">
+            <a href="/admin" class="logo">
+                <span>Aerial Flow</span>
+                <small>Панель управления</small>
+            </a>
+            <nav class="admin-nav">
+                <a href="/admin">Dashboard</a>
+                <a href="/admin/leads">Заявки</a>
+                <a href="/admin/events">События</a>
+                <a href="/admin/news">Новости</a>
+                <a href="/admin/generator">Генератор текстов</a>
+                <a href="/admin/generated-texts" class="active">История текстов</a>
+                <a href="/admin/logout">Выйти</a>
+            </nav>
+        </div>
+        <div class="admin-main">
+            <div class="admin-header">
+                <h1>История сгенерированных текстов</h1>
+                <a href="/admin/generator">← К генератору</a>
+            </div>
+
+            <div class="texts-list">
+                {% for t in texts %}
+                <div class="text-card">
+                    <div class="text-card-header">
+                        <div class="text-card-meta">
+                            <span><span class="label">Дата:</span> {{ t.created_at[:16] if t.created_at else '—' }}</span>
+                            <span><span class="label">Тип:</span> {{ t.text_type }}</span>
+                            <span><span class="label">Тема:</span> {{ t.topic }}</span>
+                            <span><span class="label">Тональность:</span> {{ t.tone }}</span>
+                            {% if t.class_format and t.class_format != 'Общая тема студии' %}
+                            <span><span class="label">Формат:</span> {{ t.class_format }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <button class="btn-copy" onclick="copyText(this, {{ t.id }})">📋 Копировать</button>
+                            <form method="POST" action="/admin/generated-texts/{{ t.id }}/delete" style="display:inline;">
+                                <button type="submit" class="btn-del" onclick="return confirm('Удалить этот текст?')">Удалить</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="text-card-body" id="textBody{{ t.id }}">{{ t.generated_text }}</div>
+                </div>
+                {% endfor %}
+                {% if texts|length == 0 %}
+                <div style="text-align:center;padding:60px 20px;color:#6b5a7a;">
+                    <p style="font-size:18px;margin-bottom:8px;">Пока нет сгенерированных текстов</p>
+                    <p style="font-size:14px;">Перейдите в <a href="/admin/generator" style="color:#6b3a7a;">генератор</a>, чтобы создать первый текст.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function copyText(btn, id) {
+        var text = document.getElementById('textBody' + id).textContent;
+        navigator.clipboard.writeText(text).then(function () {
+            var orig = btn.textContent;
+            btn.textContent = '✓ Скопировано';
+            setTimeout(function () { btn.textContent = orig; }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>
