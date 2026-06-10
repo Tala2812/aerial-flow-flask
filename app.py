@@ -1,5 +1,9 @@
 import os
 import sqlite3
+import json
+import urllib.request
+import urllib.parse
+import urllib.error
 from datetime import datetime
 from functools import wraps
 
@@ -96,6 +100,15 @@ def init_db():
 
     conn.commit()
 
+    # Migration: add VK fields to planned_posts
+    for col in ('vk_post_id', 'published_at', 'publish_error'):
+        try:
+            cursor.execute(f'ALTER TABLE planned_posts ADD COLUMN {col} TEXT')
+        except sqlite3.OperationalError:
+            pass
+
+    conn.commit()
+
     count = cursor.execute('SELECT COUNT(*) FROM events').fetchone()[0]
     if count == 0:
         cursor.executemany(
@@ -141,6 +154,48 @@ def login_required(f):
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated
+
+
+def publish_to_vk(post_text):
+    token = os.getenv('VK_ACCESS_TOKEN')
+    group_id = os.getenv('VK_GROUP_ID')
+    api_version = os.getenv('VK_API_VERSION', '5.199')
+
+    if not token or not group_id:
+        return {'success': False, 'error': 'VK API не настроен. Добавьте VK_ACCESS_TOKEN и VK_GROUP_ID в файл .env.'}
+
+    if not post_text or not post_text.strip():
+        return {'success': False, 'error': 'Текст поста пустой.'}
+
+    owner_id = -abs(int(group_id))
+
+    params = {
+        'access_token': token,
+        'v': api_version,
+        'owner_id': str(owner_id),
+        'from_group': '1',
+        'message': post_text
+    }
+
+    url = 'https://api.vk.com/method/wall.post?' + urllib.parse.urlencode(params)
+
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=15) as response:
+            data = json.loads(response.read().decode('utf-8'))
+
+        if 'error' in data:
+            error_msg = data['error'].get('error_msg', str(data['error']))
+            return {'success': False, 'error': error_msg}
+
+        vk_post_id = data.get('response', {}).get('post_id')
+        return {'success': True, 'post_id': vk_post_id}
+
+    except urllib.error.URLError as e:
+        return {'success': False, 'error': f'Ошибка соединения с VK API: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'error': f'Неожиданная ошибка: {str(e)}'}
+
 
 
 @app.route('/')
@@ -544,6 +599,46 @@ def admin_add_post_from_text(text_id):
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'post_id': post_id})
+
+
+@app.route('/admin/post-planner/<int:post_id>/publish-vk', methods=['POST'])
+@login_required
+def admin_post_planner_publish_vk(post_id):
+    conn = get_db()
+    post = conn.execute('SELECT * FROM planned_posts WHERE id = ?', (post_id,)).fetchone()
+
+    if not post:
+        conn.close()
+        return jsonify({'success': False, 'error': 'Пост не найден'}), 404
+
+    if post['status'] == 'published':
+        conn.close()
+        return jsonify({'success': False, 'error': 'Пост уже опубликован'}), 400
+
+    if not post['post_text'] or not post['post_text'].strip():
+        conn.close()
+        return jsonify({'success': False, 'error': 'Текст поста пустой. Напишите текст перед публикацией.'}), 400
+
+    result = publish_to_vk(post['post_text'])
+
+    if result['success']:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            'UPDATE planned_posts SET status=?, vk_post_id=?, published_at=?, publish_error=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+            ('published', str(result.get('post_id', '')), now, '', post_id)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'post_id': result.get('post_id'), 'published_at': now,
+                        'message': 'Пост успешно опубликован во ВКонтакте.'})
+    else:
+        conn.execute(
+            'UPDATE planned_posts SET publish_error=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+            (result['error'], post_id)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': False, 'error': result['error']}), 400
 
 
 if __name__ == '__main__':

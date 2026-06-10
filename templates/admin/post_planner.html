@@ -142,6 +142,7 @@
                         <th>Статус</th>
                         <th>Текст</th>
                         <th>Запланировано</th>
+                        <th>VK</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -157,6 +158,17 @@
                         </td>
                         <td><div class="text-preview">{{ p.post_text[:120] }}{% if p.post_text|length > 120 %}…{% endif %}</div></td>
                         <td style="font-size:13px;color:#6b5a7a;">{{ p.scheduled_at or '—' }}</td>
+                        <td style="font-size:12px;">
+                            {% if p.vk_post_id %}
+                                <span style="color:#2d7a55;">✓ ID: {{ p.vk_post_id }}</span>
+                            {% elif p.publish_error %}
+                                <span style="color:#b34a4a;" title="{{ p.publish_error }}">✕ ошибка</span>
+                            {% elif p.status == 'published' %}
+                                <span style="color:#5a2a6a;">опубликован</span>
+                            {% else %}
+                                <span style="color:#b0a0b4;">—</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <a href="/admin/post-planner/{{ p.id }}/edit" class="btn-edit-post">✎ Редактировать пост</a>
                             <form method="POST" action="/admin/post-planner/{{ p.id }}/delete" style="display:inline;" onsubmit="return confirm('Удалить пост?')">

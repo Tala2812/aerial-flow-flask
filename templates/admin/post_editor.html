@@ -45,6 +45,28 @@
             margin-bottom: 28px; background: #f0e6f4; border-radius: 12px;
             padding: 14px 18px;
         }
+        .published-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #e0f0e8; color: #2d7a55; padding: 10px 18px;
+            border-radius: 12px; font-size: 14px; font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .vk-info {
+            font-size: 13px; color: #6b5a7a; margin-top: 4px;
+        }
+        .vk-info strong { color: #4a2a5a; }
+        .error-block {
+            background: #fff0f0; border: 1px solid #e0b8b8;
+            border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+            font-size: 13px; color: #8a2a2a;
+        }
+        .error-block .label { font-weight: 600; display: block; margin-bottom: 4px; }
+        .btn-publish-vk {
+            background: #2787F5; color: white;
+        }
+        .btn-publish-vk:hover { background: #1a6fc9; }
+        .btn-publish-vk:disabled { background: #b0c4de; cursor: not-allowed; }
+        .btn-publish-vk:disabled:hover { background: #b0c4de; }
         .form-card {
             background: white; border-radius: 16px;
             padding: 32px; box-shadow: 0 2px 12px rgba(107,58,122,0.08);
@@ -139,6 +161,22 @@
             </div>
 
             <div class="form-card">
+                {% if post and post.status == 'published' %}
+                <div class="published-badge">
+                    ✓ Опубликован во ВКонтакте
+                    {% if post.vk_post_id %}
+                    <span style="font-size:13px;font-weight:400;">(ID: {{ post.vk_post_id }})</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if post and post.publish_error %}
+                <div class="error-block">
+                    <span class="label">✕ Ошибка при публикации</span>
+                    {{ post.publish_error }}
+                </div>
+                {% endif %}
+
                 <form method="POST">
                     <div class="form-group">
                         <label>Название поста</label>
@@ -182,12 +220,16 @@
                             {% if post %}Сохранить{% else %}Создать пост{% endif %}
                         </button>
                         {% if post and post.status != 'published' %}
-                        <button type="button" class="btn btn-secondary" onclick="publishNow()" id="publishVkBtn" disabled title="Функция будет доступна в следующей версии">
+                        <button type="button" class="btn btn-publish-vk" onclick="publishVk()" id="publishVkBtn">
                             📤 Опубликовать во ВКонтакте
                         </button>
-                        <span class="vk-note">Функция следующего этапа — будет доступна после подключения VK API</span>
+                        <span class="vk-note" id="vkNote">Пост будет опубликован на стене сообщества</span>
+                        {% endif %}
+                        {% if post and post.status == 'published' %}
+                        <span class="vk-note">Пост уже опубликован. Повторная публикация недоступна.</span>
                         {% endif %}
                     </div>
+                    <div id="publishResult" style="display:none;margin-top:16px;padding:14px 18px;border-radius:12px;font-size:14px;"></div>
                 </form>
             </div>
         </div>
@@ -202,8 +244,41 @@
         counter.className = 'char-counter' + (len > 2000 ? ' warning' : '');
         document.getElementById('charCountInput').value = len;
     }
-    function publishNow() {
-        alert('VK API будет подключён позже. Пока вы можете опубликовать пост вручную.');
+    function publishVk() {
+        var btn = document.getElementById('publishVkBtn');
+        var note = document.getElementById('vkNote');
+        var resultDiv = document.getElementById('publishResult');
+        resultDiv.style.display = 'none';
+        btn.disabled = true;
+        btn.textContent = '⏳ Публикация...';
+        note.textContent = 'Отправляем запрос во ВКонтакте...';
+
+        fetch(window.location.pathname.replace('/edit', '/publish-vk'), { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    resultDiv.className = '';
+                    resultDiv.style.cssText = 'display:block;margin-top:16px;padding:14px 18px;border-radius:12px;font-size:14px;background:#e0f0e8;color:#2d7a55;';
+                    resultDiv.textContent = '✓ ' + data.message;
+                    note.textContent = 'Пост опубликован. Страница будет перезагружена...';
+                    setTimeout(function () { window.location.reload(); }, 1500);
+                } else {
+                    resultDiv.className = '';
+                    resultDiv.style.cssText = 'display:block;margin-top:16px;padding:14px 18px;border-radius:12px;font-size:14px;background:#fff0f0;color:#8a2a2a;';
+                    resultDiv.textContent = '✕ ' + (data.error || 'Ошибка публикации');
+                    btn.disabled = false;
+                    btn.textContent = '📤 Опубликовать во ВКонтакте';
+                    note.textContent = 'Пост будет опубликован на стене сообщества';
+                }
+            })
+            .catch(function () {
+                resultDiv.className = '';
+                resultDiv.style.cssText = 'display:block;margin-top:16px;padding:14px 18px;border-radius:12px;font-size:14px;background:#fff0f0;color:#8a2a2a;';
+                resultDiv.textContent = '✕ Ошибка соединения с сервером';
+                btn.disabled = false;
+                btn.textContent = '📤 Опубликовать во ВКонтакте';
+                note.textContent = 'Пост будет опубликован на стене сообщества';
+            });
     }
     updateCounter();
     </script>
