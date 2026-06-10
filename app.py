@@ -78,6 +78,22 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS planned_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_text_id INTEGER,
+            title TEXT,
+            post_text TEXT NOT NULL,
+            platform TEXT DEFAULT 'VK',
+            status TEXT DEFAULT 'draft',
+            scheduled_at TEXT,
+            char_count INTEGER DEFAULT 0,
+            admin_note TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
 
     count = cursor.execute('SELECT COUNT(*) FROM events').fetchone()[0]
@@ -184,11 +200,12 @@ def admin_dashboard():
     events_count = conn.execute('SELECT COUNT(*) FROM events').fetchone()[0]
     news_count = conn.execute('SELECT COUNT(*) FROM news').fetchone()[0]
     texts_count = conn.execute('SELECT COUNT(*) FROM generated_texts').fetchone()[0]
+    posts_count = conn.execute('SELECT COUNT(*) FROM planned_posts').fetchone()[0]
     conn.close()
     return render_template('admin/dashboard.html',
                            leads_count=leads_count, new_leads=new_leads,
                            events_count=events_count, news_count=news_count,
-                           texts_count=texts_count)
+                           texts_count=texts_count, posts_count=posts_count)
 
 
 @app.route('/admin/leads')
@@ -410,15 +427,16 @@ def admin_generator_generate():
         return jsonify({'success': False, 'error': f'Ошибка API: {str(e)}'}), 500
 
     conn = get_db()
-    conn.execute(
+    cursor = conn.execute(
         'INSERT INTO generated_texts (text_type, topic, class_format, audience, tone, length, cta, extra_details, generated_text) '
         'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         (text_type, topic, class_format, audience, tone, length, cta, extra, generated)
     )
+    text_id = cursor.lastrowid
     conn.commit()
     conn.close()
 
-    return jsonify({'success': True, 'text': generated})
+    return jsonify({'success': True, 'text': generated, 'text_id': text_id})
 
 
 @app.route('/admin/generated-texts')
@@ -438,6 +456,94 @@ def admin_generated_text_delete(text_id):
     conn.commit()
     conn.close()
     return redirect(url_for('admin_generated_texts'))
+
+
+@app.route('/admin/post-planner')
+@login_required
+def admin_post_planner():
+    conn = get_db()
+    posts = conn.execute(
+        'SELECT p.*, g.generated_text as source_text, g.topic as source_topic '
+        'FROM planned_posts p '
+        'LEFT JOIN generated_texts g ON p.source_text_id = g.id '
+        'ORDER BY p.updated_at DESC'
+    ).fetchall()
+    conn.close()
+    return render_template('admin/post_planner.html', posts=posts)
+
+
+@app.route('/admin/post-planner/new', methods=['GET', 'POST'])
+@login_required
+def admin_post_planner_new():
+    if request.method == 'POST':
+        post_text = request.form.get('post_text', '')
+        conn = get_db()
+        conn.execute(
+            'INSERT INTO planned_posts (title, post_text, platform, status, scheduled_at, char_count, admin_note) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (request.form.get('title', ''), post_text,
+             request.form.get('platform', 'VK'),
+             request.form.get('status', 'draft'),
+             request.form.get('scheduled_at') or None,
+             len(post_text), request.form.get('admin_note', ''))
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('admin_post_planner'))
+    return render_template('admin/post_editor.html', post=None)
+
+
+@app.route('/admin/post-planner/<int:post_id>/edit', methods=['GET', 'POST'])
+@login_required
+def admin_post_planner_edit(post_id):
+    conn = get_db()
+    if request.method == 'POST':
+        post_text = request.form.get('post_text', '')
+        conn.execute(
+            'UPDATE planned_posts SET title=?, post_text=?, platform=?, status=?, scheduled_at=?, '
+            'char_count=?, admin_note=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+            (request.form.get('title', ''), post_text,
+             request.form.get('platform', 'VK'),
+             request.form.get('status', 'draft'),
+             request.form.get('scheduled_at') or None,
+             len(post_text), request.form.get('admin_note', ''), post_id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('admin_post_planner'))
+    post = conn.execute('SELECT * FROM planned_posts WHERE id = ?', (post_id,)).fetchone()
+    conn.close()
+    return render_template('admin/post_editor.html', post=post)
+
+
+@app.route('/admin/post-planner/<int:post_id>/delete', methods=['POST'])
+@login_required
+def admin_post_planner_delete(post_id):
+    conn = get_db()
+    conn.execute('DELETE FROM planned_posts WHERE id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin_post_planner'))
+
+
+@app.route('/admin/post-planner/add-from-text/<int:text_id>', methods=['POST'])
+@login_required
+def admin_add_post_from_text(text_id):
+    conn = get_db()
+    text = conn.execute('SELECT * FROM generated_texts WHERE id = ?', (text_id,)).fetchone()
+    if not text:
+        conn.close()
+        return jsonify({'success': False, 'error': 'Текст не найден'}), 404
+    generated = text['generated_text']
+    cursor = conn.execute(
+        'INSERT INTO planned_posts (source_text_id, title, post_text, platform, status, char_count) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
+        (text_id, text['topic'] or 'Пост', generated, 'VK', 'draft', len(generated))
+    )
+    post_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'post_id': post_id})
 
 
 if __name__ == '__main__':

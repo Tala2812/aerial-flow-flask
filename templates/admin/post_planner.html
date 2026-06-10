@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>План публикаций — Aerial Flow Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f4fa; color: #2d1b36; }
+        .admin-layout { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #2d1b36, #4a2a5a);
+            padding: 24px 0; flex-shrink: 0;
+        }
+        .admin-sidebar .logo {
+            display: block; text-align: center;
+            padding: 0 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px; text-decoration: none;
+        }
+        .admin-sidebar .logo span { font-family: 'Playfair Display', serif; color: white; font-size: 22px; }
+        .admin-sidebar .logo small { display: block; color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; }
+        .admin-nav a {
+            display: block; padding: 12px 24px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none; font-size: 14px; transition: all 0.2s;
+        }
+        .admin-nav a:hover, .admin-nav a.active { background: rgba(255,255,255,0.1); color: white; }
+        .admin-nav a.active { border-left: 3px solid #d4b8e0; }
+        .admin-main { flex: 1; padding: 32px; }
+        .admin-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 8px;
+        }
+        .admin-header h1 { font-family: 'Playfair Display', serif; font-size: 28px; }
+        .admin-header a {
+            color: #6b5a7a; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border-radius: 8px;
+            border: 1px solid #d4b8e0; transition: all 0.2s;
+        }
+        .admin-header a:hover { background: #d4b8e0; color: white; }
+        .page-subtitle {
+            color: #6b5a7a; font-size: 14px; line-height: 1.5;
+            margin-bottom: 24px; background: #f0e6f4; border-radius: 12px;
+            padding: 14px 18px;
+        }
+        .admin-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(107,58,122,0.08); }
+        .admin-table th { text-align: left; padding: 14px 16px; background: #f0e6f4; font-weight: 500; color: #4a2a5a; font-size: 13px; }
+        .admin-table td { padding: 14px 16px; border-top: 1px solid #f0eaf2; font-size: 14px; vertical-align: middle; }
+        .admin-table tr:hover td { background: #faf6fc; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-draft { background: #f0e6f4; color: #6b5a7a; }
+        .badge-ready { background: #e0f0e8; color: #2d7a55; }
+        .badge-scheduled { background: #dce8f4; color: #2d5a7a; }
+        .badge-published { background: #e8d5f0; color: #5a2a6a; }
+        .text-preview { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6b5a7a; font-size: 13px; }
+        .btn-edit-post {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; background: #6b3a7a; color: white;
+            text-decoration: none; border-radius: 10px; font-size: 13px;
+            transition: background 0.2s; border: none; cursor: pointer;
+        }
+        .btn-edit-post:hover { background: #5a2a6a; }
+        .btn-delete-post {
+            background: none; border: none; color: #b34a4a;
+            font-size: 13px; cursor: pointer; margin-left: 8px;
+        }
+        .btn-delete-post:hover { color: #8a2a2a; }
+        .empty-state {
+            text-align: center; padding: 80px 20px;
+            background: linear-gradient(135deg, #f8e8f0, #e8d5f0);
+            border-radius: 20px;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 8px; }
+        .empty-state p { color: #6b5a7a; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
+        .empty-state .btn-primary {
+            display: inline-block; padding: 12px 28px;
+            background: #6b3a7a; color: white; text-decoration: none;
+            border-radius: 12px; font-size: 15px; transition: background 0.2s;
+        }
+        .empty-state .btn-primary:hover { background: #5a2a6a; }
+        .empty-state .btn-secondary {
+            display: inline-block; margin-top: 12px;
+            color: #6b5a7a; text-decoration: none; font-size: 14px;
+            padding: 8px 20px; border-radius: 10px;
+            border: 1px solid #d4b8e0; transition: all 0.2s;
+        }
+        .empty-state .btn-secondary:hover { background: #d4b8e0; color: white; }
+        @media (max-width: 768px) {
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar { width: 100%; padding: 12px 0; }
+            .admin-nav { display: flex; overflow-x: auto; padding: 0 12px; }
+            .admin-nav a { white-space: nowrap; padding: 10px 16px; }
+            .admin-main { padding: 20px; }
+            .admin-table { font-size: 13px; }
+            .admin-table th, .admin-table td { padding: 10px 8px; }
+            .text-preview { max-width: 100px; }
+            .admin-header { flex-direction: column; gap: 12px; }
+            .btn-edit-post { font-size: 12px; padding: 6px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="admin-sidebar">
+            <a href="/admin" class="logo">
+                <span>Aerial Flow</span>
+                <small>Панель управления</small>
+            </a>
+            <nav class="admin-nav">
+                <a href="/admin">Панель управления</a>
+                <a href="/admin/leads">Заявки</a>
+                <a href="/admin/events">События</a>
+                <a href="/admin/news">Новости</a>
+                <a href="/admin/generator">Генератор текстов</a>
+                <a href="/admin/generated-texts">История текстов</a>
+                <a href="/admin/post-planner" class="active">План публикаций</a>
+                <a href="/admin/logout">Выйти</a>
+            </nav>
+        </div>
+        <div class="admin-main">
+            <div class="admin-header">
+                <div>
+                    <h1>План публикаций</h1>
+                </div>
+                <a href="/admin/post-planner/new">+ Новый пост</a>
+            </div>
+
+            <div class="page-subtitle">
+                Здесь можно отредактировать сгенерированные тексты, проверить длину,
+                выбрать статус и запланировать публикацию во ВКонтакте.
+            </div>
+
+            {% if posts %}
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Платформа</th>
+                        <th>Статус</th>
+                        <th>Текст</th>
+                        <th>Запланировано</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in posts %}
+                    <tr>
+                        <td><strong>{{ p.title or 'Без названия' }}</strong></td>
+                        <td>{{ p.platform }}</td>
+                        <td>
+                            {% set status_map = {'draft': 'Черновик', 'ready': 'Готов', 'scheduled': 'Запланирован', 'published': 'Опубликован'} %}
+                            {% set badge_map = {'draft': 'badge-draft', 'ready': 'badge-ready', 'scheduled': 'badge-scheduled', 'published': 'badge-published'} %}
+                            <span class="badge {{ badge_map.get(p.status, 'badge-draft') }}">{{ status_map.get(p.status, p.status) }}</span>
+                        </td>
+                        <td><div class="text-preview">{{ p.post_text[:120] }}{% if p.post_text|length > 120 %}…{% endif %}</div></td>
+                        <td style="font-size:13px;color:#6b5a7a;">{{ p.scheduled_at or '—' }}</td>
+                        <td>
+                            <a href="/admin/post-planner/{{ p.id }}/edit" class="btn-edit-post">✎ Редактировать пост</a>
+                            <form method="POST" action="/admin/post-planner/{{ p.id }}/delete" style="display:inline;" onsubmit="return confirm('Удалить пост?')">
+                                <button type="submit" class="btn-delete-post">✕ Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <div class="icon">📝</div>
+                <h3>Публикаций пока нет</h3>
+                <p>
+                    Создайте пост вручную или сгенерируйте текст с помощью AI<br>
+                    и добавьте его в план публикаций.
+                </p>
+                <a href="/admin/generator" class="btn-primary">Перейти в генератор текстов</a><br>
+                <a href="/admin/post-planner/new" class="btn-secondary">Создать пост вручную</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

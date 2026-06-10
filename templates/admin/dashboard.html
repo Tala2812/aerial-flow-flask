@@ -131,18 +131,19 @@
                 <small>Панель управления</small>
             </a>
             <nav class="admin-nav">
-                <a href="/admin" class="active">Dashboard</a>
+                <a href="/admin" class="active">Панель управления</a>
                 <a href="/admin/leads">Заявки</a>
                 <a href="/admin/events">События</a>
                 <a href="/admin/news">Новости</a>
                 <a href="/admin/generator">Генератор текстов</a>
                 <a href="/admin/generated-texts">История текстов</a>
+                <a href="/admin/post-planner">План публикаций</a>
                 <a href="/admin/logout">Выйти</a>
             </nav>
         </div>
         <div class="admin-main">
             <div class="admin-header">
-                <h1>Dashboard</h1>
+                <h1>Панель управления</h1>
                 <a href="/">На сайт</a>
             </div>
             <div class="stats-grid">
@@ -165,6 +166,10 @@
                 <div class="stat-card">
                     <div class="stat-number">{{ texts_count }}</div>
                     <div class="stat-label">Сгенерировано текстов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ posts_count }}</div>
+                    <div class="stat-label">Постов в плане</div>
                 </div>
             </div>
             <div class="admin-welcome">
